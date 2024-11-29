@@ -5,14 +5,7 @@ Full Name: Frank Bautista
 
 Brief description of my custom classifier:
 
-I believe the Naive Bayes model we have constructed does an ok job at predicting sentiment.
-However i believe it will always do a horrible job at predicting sentiment when there is a negating word in the sentence.
-For example: I do not like this movie. Most of the sentence is positive but the word "not" makes the sentence negative.
-I believe the model could do a better job at predicting sentiment if it could take into account negating words, possibly getting rid of 
-connecting words like "is" "and" etc... and only focusing on the main words that most likely determine sentiment. Most of these connecting words
-are short in length, so i believe it may be possible to remove a significant portion by having a word limit of 2-4 characters (as long as its not a  common negating word).
-
-(not yet implemented)
+Here i have used the approach of bigrams to better account for words that are dependent on each other such as "not good" or "very bad".
 """
 import argparse, math, os, re, string, zipfile
 from typing import Generator, Hashable, Iterable, List, Sequence, Tuple
@@ -55,6 +48,7 @@ class Sentiment:
         example = example.strip() # remove leading and trailing whitespaces
         return example.split()
 
+
     def add_example(self, example: str, label: Hashable, id:str = None):
         """Add a single training example with label to the model
 
@@ -63,7 +57,6 @@ class Sentiment:
             label (Hashable): Example label
             id (str, optional): File name from training/test data (may not be available). Defaults to None.
         """
-        # TODO: Implement function to update the model with words identified in this training example
         stripped_example = self.preprocess(example)
         if label == 1:
             self.positive_documents_count += 1
@@ -141,6 +134,47 @@ class CustomSentiment(Sentiment):
     # TODO: Implement your custom Naive Bayes model
     def __init__(self, labels: Iterable[Hashable]):
         super().__init__(labels)
+
+    def bigram(self, words):
+        """
+        Given a list of words, return a list of bigrams.
+        Args:
+            words (list): list of preprocessed words.
+        Returns:
+            list: list of bigrams
+        """
+        return [words[i] + " " + words[i+1] for i in range(len(words)-1)]
+
+    def add_example(self, example: str, label: Hashable, id:str = None):
+        """Add a single training example with label to the model
+
+        Args:
+            example (str): Text input
+            label (Hashable): Example label
+            id (str, optional): File name from training/test data (may not be available). Defaults to None.
+        """
+        stripped_example = self.preprocess(example)
+        stripped_example = stripped_example + self.bigram(stripped_example) #combine unigrams and bigrams
+        if label == 1:
+            self.positive_documents_count += 1
+            for word in stripped_example:
+                self.total_positive_words += 1
+                if word in self.positive_words_frequencies:
+                    self.positive_words_frequencies[word] += 1
+                else:
+                    self.positive_words_frequencies[word] = 1
+        elif label == 0:
+            self.negative_documents_count += 1
+            for word in stripped_example:
+                self.total_negative_words += 1
+                if word in self.negative_words_frequencies:
+                    self.negative_words_frequencies[word] += 1
+                else:
+                    self.negative_words_frequencies[word] = 1
+
+
+    
+
 
 
 
