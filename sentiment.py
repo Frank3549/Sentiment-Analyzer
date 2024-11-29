@@ -100,17 +100,18 @@ class Sentiment:
         prior_negative = math.log(self.negative_documents_count / (self.positive_documents_count + self.negative_documents_count))
         positive_conditional_probability = self.conditional_probability(stripped_example, 1, pseudo)
         negative_conditional_probability = self.conditional_probability(stripped_example, 0, pseudo)
-        naive_bayes_denominator = np.logaddexp( (prior_positive + positive_conditional_probability), (prior_negative + negative_conditional_probability) ) 
+        positive_odds = (prior_positive + positive_conditional_probability) #log space addition
+        negative_odds = (prior_negative + negative_conditional_probability) #log space addition
+        total_odds = np.logaddexp( positive_odds, negative_odds ) 
         
         #P(positive|example)
-        # plus is multiplication in log space (log(a) + log(b) = log(a*b))
         # minus is division in log space (log(a) - log(b) = log(a/b))
-        positive_probability = math.exp( (prior_positive + positive_conditional_probability) - naive_bayes_denominator)
+        positive_sentiment_probability = math.exp( positive_odds - total_odds)
 
         #P(negative|example)
-        negative_probability = math.exp( (prior_negative + negative_conditional_probability) - naive_bayes_denominator )
+        negative__sentiment_probability = math.exp( negative_odds - total_odds )
         
-        return [negative_probability, positive_probability]
+        return [negative__sentiment_probability, positive_sentiment_probability]
 
     def conditional_probability(self, words, sentiment, pseudo=0.0001) -> float:
         """
