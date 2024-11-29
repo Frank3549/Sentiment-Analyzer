@@ -135,16 +135,6 @@ class CustomSentiment(Sentiment):
     def __init__(self, labels: Iterable[Hashable]):
         super().__init__(labels)
 
-    def generate_gram(self, words, n: int):
-        """
-        Given a list of words, return a list of bigrams and trigrams.
-        Args:
-            words (list): list of preprocessed words.
-        Returns:
-            list: list of unigrams, bigrams and trigrams, and 4-grams.
-        """
-        return words + [words[i] + " " + words[i+1] for i in range(len(words)-1)] + [words[i] + " " + words[i+1] + words[i+2] for i in range(len(words)-2)] + self.n_gram(words, n)
-    
     def n_gram (self, words: List[str], n: int):
         """Generate half-grams by splitting words into n-sized chunks."""
 
@@ -153,7 +143,7 @@ class CustomSentiment(Sentiment):
             if len(word) > n:  
                 n_grams.extend([word[i:i+n] for i in range(len(word) - n + 1)])
             else:
-                n_grams.append(word)  # Keep short words as-is
+                n_grams.append(word) 
         return n_grams
 
     def add_example(self, example: str, label: Hashable, id:str = None):
