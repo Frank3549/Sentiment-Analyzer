@@ -34,8 +34,8 @@ class Sentiment:
         self.negative_documents_count = 0
         self.positive_words_frequencies = {}
         self.negative_words_frequencies = {}
-        self.unique_positive_words = 0
-        self.unique_negative_words = 0
+        self.total_positive_words = 0
+        self.total_negative_words = 0
         self.labels = labels
 
 
@@ -68,19 +68,19 @@ class Sentiment:
         if label == 1:
             self.positive_documents_count += 1
             for word in stripped_example:
+                self.total_positive_words += 1
                 if word in self.positive_words_frequencies:
                     self.positive_words_frequencies[word] += 1
                 else:
                     self.positive_words_frequencies[word] = 1
-                    self.unique_positive_words += 1
         elif label == 0:
             self.negative_documents_count += 1
             for word in stripped_example:
+                self.total_negative_words += 1
                 if word in self.negative_words_frequencies:
                     self.negative_words_frequencies[word] += 1
                 else:
                     self.negative_words_frequencies[word] = 1
-                    self.unique_negative_words += 1
 
 
 
@@ -128,15 +128,12 @@ class Sentiment:
         accumulation_of_probabilities = 0
 
         if sentiment == 1:
-            total_positive_words = sum(self.positive_words_frequencies.values())
             for word in words:
                 #using math.log to avoid underflow
-                accumulation_of_probabilities += math.log((self.positive_words_frequencies.get(word, 0) + pseudo) / (total_positive_words + (pseudo * self.unique_positive_words)))
+                accumulation_of_probabilities += math.log((self.positive_words_frequencies.get(word, 0) + pseudo) / (self.total_positive_words + (pseudo * len(self.positive_words_frequencies))))
         elif sentiment == 0:
-            total_negative_words = sum(self.negative_words_frequencies.values())
             for word in words:
-                #using math.log to avoid underflow
-                accumulation_of_probabilities += math.log((self.negative_words_frequencies.get(word, 0) + pseudo) / (total_negative_words + (pseudo * self.unique_negative_words)))
+                accumulation_of_probabilities += math.log((self.negative_words_frequencies.get(word, 0) + pseudo) / (self.total_negative_words + (pseudo * len(self.negative_words_frequencies) )))
         return accumulation_of_probabilities
 
 class CustomSentiment(Sentiment):
