@@ -135,15 +135,26 @@ class CustomSentiment(Sentiment):
     def __init__(self, labels: Iterable[Hashable]):
         super().__init__(labels)
 
-    def bigram(self, words):
+    def generate_gram(self, words, n: int):
         """
-        Given a list of words, return a list of bigrams.
+        Given a list of words, return a list of bigrams and trigrams.
         Args:
             words (list): list of preprocessed words.
         Returns:
-            list: list of bigrams
+            list: list of unigrams, bigrams and trigrams, and 4-grams.
         """
-        return [words[i] + " " + words[i+1] for i in range(len(words)-1)]
+        return words + [words[i] + " " + words[i+1] for i in range(len(words)-1)] + [words[i] + " " + words[i+1] + words[i+2] for i in range(len(words)-2)] + self.n_gram(words, n)
+    
+    def n_gram (self, words: List[str], n: int):
+        """Generate half-grams by splitting words into n-sized chunks."""
+
+        n_grams = []
+        for word in words:
+            if len(word) > n:  
+                n_grams.extend([word[i:i+n] for i in range(len(word) - n + 1)])
+            else:
+                n_grams.append(word)  # Keep short words as-is
+        return n_grams
 
     def add_example(self, example: str, label: Hashable, id:str = None):
         """Add a single training example with label to the model
@@ -154,7 +165,7 @@ class CustomSentiment(Sentiment):
             id (str, optional): File name from training/test data (may not be available). Defaults to None.
         """
         stripped_example = self.preprocess(example)
-        stripped_example = stripped_example + self.bigram(stripped_example) #combine unigrams and bigrams
+        stripped_example = self.n_gram(stripped_example, 4) 
         if label == 1:
             self.positive_documents_count += 1
             for word in stripped_example:
@@ -172,6 +183,36 @@ class CustomSentiment(Sentiment):
                 else:
                     self.negative_words_frequencies[word] = 1
 
+    def predict(self, example: str, pseudo=0.0001, id:str = None) -> Sequence[float]:
+        """Predict the P(label|example) for example text, return probabilities as a sequence
+
+        Args:
+            example (str): Test input
+            pseudo (float, optional): Pseudo-count for Laplace smoothing. Defaults to 0.0001.
+            id (str, optional): File name from training/test data (may not be available). Defaults to None.
+
+        Returns:
+            Sequence[float]: Probabilities in order of originally provided labels
+        """
+        stripped_example = self.preprocess(example)
+        stripped_example = self.n_gram(stripped_example, 4) 
+
+        prior_positive = math.log(self.positive_documents_count / (self.positive_documents_count + self.negative_documents_count))
+        prior_negative = math.log(self.negative_documents_count / (self.positive_documents_count + self.negative_documents_count))
+        positive_conditional_probability = self.conditional_probability(stripped_example, 1, pseudo)
+        negative_conditional_probability = self.conditional_probability(stripped_example, 0, pseudo)
+        positive_odds = (prior_positive + positive_conditional_probability) #log space addition
+        negative_odds = (prior_negative + negative_conditional_probability) #log space addition
+        total_odds = np.logaddexp( positive_odds, negative_odds ) 
+        
+        #P(positive|example)
+        # minus is division in log space (log(a) - log(b) = log(a/b))
+        positive_sentiment_probability = math.exp( positive_odds - total_odds)
+
+        #P(negative|example)
+        negative__sentiment_probability = math.exp( negative_odds - total_odds )
+        
+        return [negative__sentiment_probability, positive_sentiment_probability]
 
     
 
