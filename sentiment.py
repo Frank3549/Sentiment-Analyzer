@@ -5,7 +5,11 @@ Full Name: Frank Bautista
 
 Brief description of my custom classifier:
 
-Here i have used the approach of bigrams to better account for words that are dependent on each other such as "not good" or "very bad".
+Here i have used the approach of 4grams to achieve 78% accuracy. Apart from being able to work around misspelling and different word forms, 
+it seems to be able to better capture sentiment possibly due to the fact that it can capture more context, and also most negation or intensifiers. 
+
+I tried a combination of bigrams, trigrams, and unigrams but 4grams seemed to work best. Combining all approaches into one created a slightly better model than 4 grams 
+but it wasn't significant enough to warrant the extra processing time. 
 """
 import argparse, math, os, re, string, zipfile
 from typing import Generator, Hashable, Iterable, List, Sequence, Tuple
@@ -136,7 +140,7 @@ class CustomSentiment(Sentiment):
         super().__init__(labels)
 
     def n_gram (self, words: List[str], n: int):
-        """Generate half-grams by splitting words into n-sized chunks."""
+        """Generate n-grams by splitting words into n-sized chunks or smaller if not long enough."""
 
         n_grams = []
         for word in words:
